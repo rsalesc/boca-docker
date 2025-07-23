@@ -76,7 +76,7 @@ RUN \
     # && chmod 700 /usr/sbin/boca-createjail \
     # && chmod 700 /usr/sbin/boca-autojudge
 
-RUN boca-createjail || true
+RUN boca-createjail
 
 # OpenJDK 17 installation with chroot does not work as expected
 # Workaround: Install OpenJDK 17 manually

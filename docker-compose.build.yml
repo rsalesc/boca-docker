@@ -1,0 +1,57 @@
+# Docker Compose configuration for BOCA E2E tests
+services:
+  boca-base:
+    build:
+      context: .
+      dockerfile: docker/dev/base/Dockerfile
+
+  boca-db:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_PASSWORD: bocapass
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  boca-web:
+    build:
+      context: .
+      dockerfile: docker/dev/web/Dockerfile
+      args:
+        BASE_IMAGE: boca-base
+      additional_contexts:
+        boca-base: service:boca-base
+    depends_on:
+      boca-db:
+        condition: service_healthy
+    environment:
+      BOCA_DB_HOST: boca-db
+      BOCA_DB_SUPER_PASSWORD: bocapass
+      # Default BOCA admin credentials
+      BOCA_SYSTEM_PASS: boca
+      BOCA_ADMIN_PASS: boca
+    ports:
+      - "8000:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/boca/index.php"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  boca-jail:
+    build:
+      context: .
+      dockerfile: docker/dev/jail/Dockerfile
+      args:
+        BASE_IMAGE: boca-base
+      additional_contexts:
+        boca-base: service:boca-base
+    depends_on:
+      - boca-web
+    privileged: true
+    environment:
+      BOCA_DB_HOST: boca-db
+      BOCA_DB_SUPER_PASSWORD: bocapass

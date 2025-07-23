@@ -41,7 +41,7 @@ struct rlimit max_data  = {128*MBYTE, 128*MBYTE};     /* max data segment size *
 struct rlimit max_core  = {0, 0};                 /* max core file size */
 struct rlimit max_rss   = {128*MBYTE, 128*MBYTE};     /* max resident set size */
 
-struct rlimit max_processes = {4096,4096}; /* max number of processes */
+struct rlimit max_processes = {64,64}; /* max number of processes */
 
 
 int real_timeout = 30;                 /* max real time (seconds) */
@@ -53,6 +53,7 @@ int killallproc;
 int bequiet;
 int checknchild;
 int user, group;
+int process_group = 0;
 const char vers[] = "1.5.1";
 
 #define BUFFSIZE 256
@@ -251,6 +252,11 @@ void handle_alarm(int sig) {
 	alarm(1);   /* set alarm and wait for child execution */
 }
 
+void handle_term(int sig) {
+  fprintf(stderr, "safeexec: received SIGTERM\n");
+	kill(child_pid,9);
+}
+
 
 void usage(int argc, char **argv) {
   fprintf(stderr, "safeexec version %s\nusage: %s [ options ] cmd [ arg1 arg2 ... ]\n", vers, argv[0]);
@@ -312,7 +318,7 @@ int main(int argc, char **argv) {
 
   /* parse command-line options */
   getcwd(curdir, BUFFSIZE);  /* default: use cwd as rootdir */
-  while( (opt=getopt(argc,argv,"qKar:c:d:m:f:F:t:T:u:n:i:o:e:C:R:G:U:p:s")) != -1 ) {
+  while( (opt=getopt(argc,argv,"qKar:c:d:m:f:F:t:T:u:n:i:o:e:C:R:G:U:p:s:g")) != -1 ) {
     switch(opt) {
 		case 'q': bequiet=1;
 			break;
@@ -419,6 +425,7 @@ Use -U and -G for that, but you might need to have root privilegies.\n");
 		fprintf(stderr,"safeexec: starting the job. Parent controller has pid %d, child is %d...\n",getpid(),child_pid);
 	alarm(1);   /* set alarm and wait for child execution */
 	signal(SIGALRM, handle_alarm);
+  signal(SIGTERM, handle_term);
 	while(waitpid(child_pid, &status, 0) != child_pid) ;
 	if(timekill) exitandkill(3);
 
