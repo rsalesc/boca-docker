@@ -51,6 +51,14 @@ services:
         boca-base: service:boca-base
     depends_on:
       - boca-web
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 2048M
+        reservations:
+          cpus: '0.25'
+          memory: 512M
     privileged: true
     environment:
       BOCA_DB_HOST: boca-db
